@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+
+<head>
+  <link rel="stylesheet" href="final.css" />
+  <meta charset="UTF-8" />
+
+
+  <title id="meta_title">WhatsApp Stats | Analyze Your Chat Data</title>
+  <meta name="description" content="Analyze your WhatsApp chat statistics by uploading a ZIP file of your chat data" />
+  <meta name="author" content="Paul" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="keywords" content="WhatsApp, Chat, Statistics, Analytics, Upload, Zip File, reversed.dev">
+
+  <meta property="og:site_name" content="WhatsApp Stats | Analyze Your Chat Data" />
+  <meta property="og:title" content="WhatsApp Stats | Analyze Your Chat Data" />
+  <meta property="og:description"
+    content="Easily view detailed statistics of your WhatsApp chats by uploading a ZIP file of your data" />
+  <meta property="og:image" content="https://cdn.reversed.dev/pictures/whatsapp.png" />
+  <meta property="og:url" content="https://whatsapp.reversed.dev" />
+  <meta property="og:type" content="website" />
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="WhatsAppStats_App">
+  <meta name="twitter:creator" content="WhatsAppStats_App">
+  <meta name="twitter:url" content="https://whatsapp.reversed.dev" />
+  <meta name="twitter:title" content="WhatsApp Stats | Analyze Your Chat Data">
+  <meta name="twitter:description"
+    content="Get insights from your WhatsApp chats by uploading a ZIP file of your chat data">
+
+  <meta name="coverage" content="Worldwide">
+  <meta name="distribution" content="Global">
+  <meta name="rating" content="General">
+  <meta name="revisit-after" content="3 days">
+  <meta name="target" content="all">
+  <meta name="language" content="English" />
+
+  <meta name="googlebot" content="all" />
+  <meta name="googlebot-news" content="all" />
+  <meta name="google" content="notranslate" />
+  <meta name="robots" content="max-snippet:[80]" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+
+  <meta name="darkreader-lock" />
+</head>
+
+<body class="bg-black flex flex-col min-h-screen">
+  <div id="particles-js"></div>
+
+  <div class="flex-grow flex justify-center items-center relative z-10">
+    <div class="card">
+      <div id="texthead">
+        <h1 class="text-6xl text-white font-bold inkfree">Whats my Stats?</h1>
+        <p class="text-gray-400 text-xl mt-4">A <span class="underline">WEB</span>-App to see your stats with someone on
+          Whatsapp</p>
+        <p class="text-gray-400 text-xl mt-4">Sadly, some chats, names, regions and languages aren't fully supported. <br>We try to improve the service day by day!</p>
+        <p class="text-gray-400 text-xl mt-4">We are all Browser based, so no data stored anywhere!</p>
+      </div>
+      <br><br><br>
+      <div id="fileuploader" style="display: block;">
+        <h2 class="text-white text-3xl">Choose a File!</h2>
+        <p class="text-gray-400 text-base">This has to be a .zip exported by Whatsapp</p>
+        <input class="text-white" type="file" name="filepicker" id="filepicker" min="1" max="1"> <br> <br>
+        <button onclick="Process()"
+          class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-purple-600 to-blue-500 group-hover:from-purple-600 group-hover:to-blue-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800">
+          <span
+            class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+            Crunch it😋
+          </span>
+        </button>
+      </div>
+
+      <div id="statsdata" style="font-family: 'Courier New', Courier, monospace !important">
+      </div>
+
+    </div>
+  </div>
+
+  <script src="particles.js"></script>
+  <script src="app.js"></script>
+
+  <footer class=" rounded-lg shadow mt-auto bg-transparent">
+    <div class="w-full mx-auto max-w-screen-xl p-4 md:flex md:items-center md:justify-between">
+      <span class="text-sm text-gray-500 sm:text-center dark:text-gray-400">© 2024 <a
+          href="https://space.reversed.dev/?ref=footer" class="hover:underline">Made with ♥️ by Space | reversed.dev</a>
+      </span>
+      <ul class="flex flex-wrap items-center mt-3 text-sm font-medium text-gray-500 dark:text-gray-400 sm:mt-0">
+        <li>
+          <a href="https://support.reversed.dev/?ref=spaceprofile" class="hover:underline me-4 md:me-6">Support
+            Me😭🙏</a>
+        </li>
+      </ul>
+    </div>
+  </footer>
+</body>
+
+</html>

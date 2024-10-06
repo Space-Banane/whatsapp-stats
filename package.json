@@ -1,0 +1,19 @@
+{
+  "scripts": {
+    "dev": "rm -rf dist && esbuild `find src \\( -name '*.ts' -o -name '*.tsx' \\)` --platform='node' --sourcemap --ignore-annotations --format='cjs' --target='es2022' --outdir='dist' && cd dist && node index.js && cd ..",
+    "tailwind": "npx tailwindcss -i ./content/base.css -o ./content/final.css --watch"
+  },
+  "dependencies": {
+    "@rjweb/runtime-node": "^1.1.1",
+    "@rjweb/utils": "^1.12.21",
+    "axios": "^1.7.3",
+    "dotenv": "^16.4.5",
+    "esbuild": "^0.21.5",
+    "redis": "^4.7.0",
+    "rjweb-server": "^9.7.0",
+    "tailwindcss": "^3.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.14"
+  }
+}
