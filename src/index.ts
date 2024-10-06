@@ -4,7 +4,7 @@ import { network } from "@rjweb/utils";
 import { configDotenv } from "dotenv";
 
 const server = new Server(Runtime, {
-  port: 6756,
+  port: 4545,
   proxy: {
     enabled: true,
     credentials: {
