@@ -1397,50 +1397,8 @@ video {
 }
 
 body {
-  background-color: #fff;
-  font-family: monospace;
-}
-
-.border-button {
-  border: solid 2.5px #000;
-  transition: border-width 0.6s linear;
-  border-radius: 20px;
-  background-color: transparent;
-  padding: 2px 7px;
-  font-size: 11px;
-  cursor: pointer;
-  display: inline-block;
-}
-
-.btn:hover {
-  background: rgba(238, 238, 238, 0.48);
-}
-
-.fourofour {
-  color: #000;
-}
-
-.border-button {
-  border: solid 2.5px #000;
-  transition: border-width 0.4s linear;
-}
-
-.border-button:hover {
-  border-width: 3.5px;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  z-index: 2;
-}
-
-body {
   background: #000;
-}
-
-canvas {
-  display: block;
+  font-family: monospace;
 }
 
 #particles-js {
