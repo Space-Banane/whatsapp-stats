@@ -2,7 +2,9 @@ particlesJS.load("particles-js", "particles.json", function () {
   console.log("callback - particles.js config loaded");
 });
 
-function daysBetween(time) {
+// A Project that is fun to actually code
+
+function daysBetween(time) { // Thanks ChatGPT 😛
   const { first, last } = time;
 
   // Create Date objects for both dates
@@ -52,9 +54,9 @@ function countConsecutiveMessages(messages) {
 
 function EvaluateYapLevel(words) {
   if (words < 200) return "Starter Yapper";
-  if (words < 1600) return "Basic Yapper";
-  if (words < 2900) return "Mid Yapper";
-  if (words < 5100) return "Expert Yapper";
+  if (words < 2600) return "Basic Yapper";
+  if (words < 3900) return "Mid Yapper";
+  if (words < 6100) return "Expert Yapper";
   if (words < 17000) return "Level 10 Yapper";
   return `"Please Shut the hell up🙏"`;
 }
@@ -321,8 +323,8 @@ async function DoStats(content) {
   <span class="text-lg font-bold ${gradient}">${data.stats.combo.name}</span> with <span class="text-lg font-bold ${gradient}">${data.stats.combo.amount}</span> B2B Messages
   </p>
 
-  <h3 class="mt-12 text-2xl text-white font-bold">Congrats, you both now know your stats with eachother...</h3>
-  <p class="text-gray-400 text-lg mt-2">Why don't you take a screenshot and send it to them?</p>
+  <h3 class="mt-12 text-2xl text-white font-bold">Congrats, you now know how obsessed you both are</h3>
+  <p class="text-gray-400 text-lg mt-2">I'd send them a Screenshot for the shits and giggles🤷</p>
 
   `;
   document.getElementById("statsdata").innerHTML = newdata;
@@ -345,3 +347,5 @@ async function Process() {
     reader.readAsArrayBuffer(file);
   }
 }
+
+// do i add freaky level chat?
