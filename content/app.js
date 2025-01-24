@@ -53,299 +53,361 @@ function countConsecutiveMessages(messages) {
 }
 
 function EvaluateYapLevel(words) {
-  if (words < 200) return "Starter Yapper";
-  if (words < 2600) return "Basic Yapper";
-  if (words < 3900) return "Mid Yapper";
-  if (words < 6100) return "Expert Yapper";
-  if (words < 17000) return "Level 10 Yapper";
-  return `"Please Shut the hell up🙏"`;
+  if (words < 1000) return "Casual Chatter 🌱";
+  if (words < 5000) return "Friendly Conversationalist 😊";
+  if (words < 10000) return "Message Master 🎯";
+  if (words < 20000) return "Chat Enthusiast ⭐";
+  if (words < 50000) return "Social Butterfly 🦋";
+  if (words < 100000) return "Conversation Champion 👑";
+  if (words < 200000) return "Legendary Communicator 🌟";
+  if (words < 500000) return "Chat Guru 🙏";
+  return "Ultimate Message Maven ✨";
 }
 
 let data;
 let people = [];
 async function DoStats(content) {
-  document.getElementById("fileuploader").style.display = "none";
-  document.getElementById("texthead").style.display = "none";
+  // Hide upload elements
+  ['fileuploader', 'texthead'].forEach(id => 
+    document.getElementById(id).style.display = 'none'
+  );
 
+  // Initialize data structure
   data = {
-    person1: {
-      name: "",
-      message_count: 0,
-      media: 0,
-      hearts: 0,
-      words: 0,
-      yap_level: "",
-      edited: 0,
-      max_combo: 0
-    },
-    person2: {
-      name: "",
-      message_count: 0,
-      media: 0,
-      hearts: 0,
-      words: 0,
-      yap_level: "",
-      edited: 0,
-      max_combo: 0
-    },
+    participants: [],
     raw: {
       messages: [],
+      totalWords: 0,
+      totalMedia: 0
     },
-    time: {
-      first: {
-        day: 0,
-        month: 0,
-        year: 0,
-      },
-      last: {
-        day: 0,
-        month: 0,
-        year: 0,
-      },
+    timespan: {
+      start: null,
+      end: null,
+      durationDays: 0
     },
     stats: {
-      hearts: {
-        more: {
-          name: "",
-          count: 0,
-        },
-        less: {
-          name: "",
-          count: 0,
-        },
+      mostActive: {
+        morning: { name: '', count: 0 }, // 6AM-12PM
+        afternoon: { name: '', count: 0 }, // 12PM-6PM 
+        evening: { name: '', count: 0 }, // 6PM-12AM
+        night: { name: '', count: 0 } // 12AM-6AM
       },
-      first_msg: {
-        name: "",
-        formatted_date: "",
+      longestMessage: {
+        sender: '',
+        words: 0,
+        date: ''
       },
-      combo: {
-        name: "",
-        amount: 0
+      emojis: {
+        mostUsed: {},
+        totalCount: 0
       }
-    },
+    }
   };
 
-  const splitted = content.split("\n");
+  const messages = content.split('\n').filter(msg => msg.trim());
   
-  for (const message of splitted) {
-    data.raw.messages.push(message);
-
-    if (message.includes(" - ")) {
-      const name = message.split(" - ")[1].split(":")[0];
-      const date = message.split(" - ")[0];
-
-      data.time.last.day = parseInt(message.split(" - ")[0].split("/")[0]);
-      data.time.last.month = parseInt(message.split(" - ")[0].split("/")[1]);
-      data.time.last.year = parseInt(message.split(" - ")[0].split("/")[2]);
-
-      if (people.length === 2) {
-        data.person1.name = people[0];
-        data.person2.name = people[1];
-      } else {
-        if (!name.startsWith("Messages and calls")) {
-          if (!name.startsWith("Your security code")) {
-            if (!name.startsWith("You unblocked")) {
-              if (!name.startsWith("You blocked")) {
-                if (!name.includes("is a contact")) {
-                  if (!name.includes("Whatsapp")) {
-                    if (message.split(" - ")[1].includes(":")) {
-                      if (!people.includes(name)) people.push(name);
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-
-      if (message.includes(data.person1.name)) {
-        if (data.person1.earliest_message === "") {
-          data.person1.earliest_message = `${parseInt(
-            date.split("/")[0]
-          )}/${parseInt(date.split("/")[1])}/${parseInt(date.split("/")[2])}`;
-        }
-        if (message.includes("<This message was edited>")) {
-          data.person1.edited++
-        }
-
-        data.person1.message_count++;
-        data.person1.words = data.person1.words + message.split(" - ")[1].split(" ").length;
-        if (message.includes("<Media omitted>")) data.person1.media++;
-        data.person1.hearts += (
-          message.match(new RegExp("❤️", "g")) || []
-        ).length;
-        data.person1.hearts += (
-          message.match(new RegExp("😍", "g")) || []
-        ).length;
-      }
-
-      if (message.includes(data.person2.name)) {
-        if (data.person2.earliest_message === "") {
-          data.person2.earliest_message = `${parseInt(
-            date.split("/")[0]
-          )}/${parseInt(date.split("/")[1])}/${parseInt(date.split("/")[2])}`;
-        }
-        if (message.includes("<This message was edited>")) {
-          data.person2.edited++
-        }
-        data.person2.message_count++;
-        data.person2.words = data.person2.words + message.split(" - ")[1].split(" ").length;
-        if (message.includes("<Media omitted>")) data.person2.media++;
-        data.person2.hearts += (
-          message.match(new RegExp("❤️", "g")) || []
-        ).length;
-        data.person2.hearts += (
-          message.match(new RegExp("😍", "g")) || []
-        ).length;
-      }
-
-      if (data.time.first.day === 0) {
-        data.time.first.day = parseInt(date.split("/")[0]);
-        data.time.first.month = parseInt(date.split("/")[1]);
-        data.time.first.year = parseInt(date.split("/")[2]);
-      }
-
-      if (data.stats.first_msg.name === "") {
-        if (people.includes(name)) {
-          data.stats.first_msg.name = removeEmojis(name).trim();
-          data.stats.first_msg.formatted_date = `${parseInt(
-            date.split("/")[0]
-          )}/${parseInt(date.split("/")[1])}/${parseInt(date.split("/")[2])}`;
-        }
-      }
+  // First pass - identify participants
+  const participantNames = new Set();
+  messages.forEach(msg => {
+    if (participantNames.size >= 2) return; // Limit to 2 participants
+    if (!msg.includes(' - ')) return;
+    const [timestamp, content] = msg.split(' - ');
+    if (!content.includes(':')) return;
+    const name = removeEmojis(content.split(':')[0]).trim();
+    if (isValidParticipant(name)) {
+      participantNames.add(name);
     }
-  }
+  });
 
+  // Initialize participant data
+  participantNames.forEach(name => {
+    data.participants.push({
+      name,
+      messageCount: 0,
+      mediaCount: 0,
+      wordCount: 0,
+      editedCount: 0,
+      emojiCount: 0,
+      maxCombo: 0,
+      timeDistribution: {
+        morning: 0,
+        afternoon: 0,
+        evening: 0,
+        night: 0
+      }
+    });
+  });
 
-  let heart_text = ``;
-  let edited_text = ``;
-  let sub_heart_text = `Seemed to 
-  <span class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-red-700">LOOOOOVVEEEEEEE</span>
-  the 😍/❤️ Emoji.`;
-  const gradient =
-    "bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-500";
-
-  data.person1.name = removeEmojis(data.person1.name);
-  data.person2.name = removeEmojis(data.person2.name);
-
-  data.person1.name = data.person1.name.trim()
-  data.person2.name = data.person2.name.trim()
-
-  if (data.person1.hearts > data.person2.hearts) {
-    data.stats.hearts.more = {
-      name: data.person1.name,
-      count: data.person1.hearts,
-    };
-  } else {
-    data.stats.hearts.more = {
-      name: data.person2.name,
-      count: data.person2.hearts,
-    };
-  }
-
-  if (data.person1.edited != 0 && data.person2.edited != 0) {
-    edited_text = `<p class="text-gray-400 mt-6"><span class="text-lg font-bold ${gradient}">${data.person1.name}</span> edited <span class="text-lg font-bold ${gradient}">${data.person1.edited}</span> Messages. <br>
-    Where <span class="text-lg font-bold ${gradient}">${data.person2.name}</span> edited just around <span class="text-lg font-bold ${gradient}">${data.person2.edited}</span> Messages.</p>`
-  }
-
-  const b2bmsg = countConsecutiveMessages(splitted);
-  data.person1.max_combo = b2bmsg[`${data.person1.name}`]
-  data.person2.max_combo = b2bmsg[`${data.person2.name}`]
-  if (data.person1.max_combo > data.person2.max_combo) {
-    data.stats.combo = {
-      name: data.person1.name,
-      amount: data.person1.max_combo
+  // Process messages
+  let currentCombo = { sender: '', count: 0 };
+  
+  messages.forEach(msg => {
+    if (!msg.includes(' - ')) return;
+    
+    const parts = msg.split(' - ');
+    if (parts.length !== 2) return;
+    const [timestamp, content] = parts;
+    
+    const timestampParts = timestamp.split(', ');
+    if (timestampParts.length !== 2) return;
+    const [date, time] = timestampParts;
+    
+    const dateParts = date.split('/');
+    if (dateParts.length !== 3) return;
+    const [month, day, shortYear] = dateParts.map(n => parseInt(n));
+    const year = 2000 + shortYear;
+    
+    const timeParts = time.split(':');
+    if (timeParts.length < 1) return;
+    const hour = parseInt(timeParts[0]);
+    
+    if (!data.timespan.start) {
+      data.timespan.start = new Date(year, month - 1, day);
     }
-  } else {
-    data.stats.combo = {
-      name: data.person2.name,
-      amount: data.person2.max_combo
+    data.timespan.end = new Date(year, month - 1, day);
+
+    const sender = content.includes(':') ? removeEmojis(content.split(':')[0]).trim() : null;
+    if (!sender || !data.participants.find(p => p.name === sender)) return;
+
+    const participant = data.participants.find(p => p.name === sender);
+    participant.messageCount++;
+
+    // Track time distribution
+    const timeOfDay = getTimeOfDay(hour);
+    participant.timeDistribution[timeOfDay]++;
+
+    // Track combos
+    if (sender === currentCombo.sender) {
+      currentCombo.count++;
+    } else {
+      if (currentCombo.count > 0) {
+        const p = data.participants.find(p => p.name === currentCombo.sender);
+        if (p) p.maxCombo = Math.max(p.maxCombo, currentCombo.count);
+      }
+      currentCombo = { sender, count: 1 };
     }
-  }
 
-  if (data.person1.hearts != 0 && data.person2.hearts != 0) {
-    heart_text = `<p class="text-gray-400 mt-6">
-  <span class="text-lg font-bold ${gradient}">${data.stats.hearts.more.name}</span> 
-  ${sub_heart_text} They sent it 
-  <span class="text-lg font-bold ${gradient}">${data.stats.hearts.more.count}</span> 
-  Times</p>`;
-  }
+    // Count words, media, emojis
+    if (content.includes('<Media omitted>')) {
+      participant.mediaCount++;
+      data.raw.totalMedia++;
+    } else if (content.includes(':')) {
+      const messageText = content.split(':')[1];
+      const words = messageText.split(' ').length;
+      participant.wordCount += words;
+      data.raw.totalWords += words;
 
-  data.person1.yap_level = EvaluateYapLevel(data.person1.words);
-  data.person2.yap_level = EvaluateYapLevel(data.person2.words);
+      // Track longest message
+      if (words > data.stats.longestMessage.words) {
+        data.stats.longestMessage = {
+          sender,
+          words,
+          date: `${day}/${month}/${year}`
+        };
+      }
 
-  const total_days = daysBetween(data.time);
+      // Count emojis
+      const emojis = messageText.match(/([\u2700-\u27BF]|[\uE000-\uF8FF]|[\u2011-\u26FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDD10-\uDDFF])/g) || [];
 
-  const newdata = `
-  <h1 class="${gradient} text-5xl font-bold">Well hello there, ${data.person1.name} & ${data.person2.name}<span class="text-white">👋</span></h1>
-  <p class="text-gray-200 mt-3 mb-4 text-2xl">Lets look at your Stats.</p>
-  <p class="text-gray-400 mt-2">Over the course of
-  <span class="text-lg font-bold ${gradient}">${total_days}</span>
-  Days you both sent around 
-  <span class="text-lg font-bold ${gradient}">${data.raw.messages.length}</span>
-  Messages. Thats
-  <span class="text-lg font-bold ${gradient}">${Math.round(data.raw.messages.length / total_days)}</span>
-  Messages a Day...
-  </p>
+      participant.emojiCount += emojis.length;
+      data.stats.emojis.totalCount += emojis.length;
+    }
+
+    // Track edited messages
+    if (content.includes('<This message was edited>')) {
+      participant.editedCount++;
+    }
+  });
+
+  // Calculate timespan
+  data.timespan.durationDays = Math.ceil((data.timespan.end - data.timespan.start) / (1000 * 60 * 60 * 24));
+
+  renderStats();
+}
+
+function getTimeOfDay(hour) {
+  if (hour >= 6 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 18) return 'afternoon';
+  if (hour >= 18 && hour < 24) return 'evening';
+  return 'night';
+}
+
+function isValidParticipant(name) {
+  const invalidNames = [
+    'Messages and calls',
+    'Your security code',
+    'You unblocked',
+    'You blocked',
+    'Whatsapp'
+  ];
+  return !invalidNames.some(invalid => name.includes(invalid));
+}
+
+function renderStats() {
+  const gradient = "bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-indigo-600";
   
-  <p class="text-gray-400 mt-4">While ${data.person1.name} sent 
-  <span class="text-lg font-bold ${gradient}">${data.person1.message_count}</span> 
-  Messages and 
-  <span class="text-lg font-bold ${gradient}">${data.person1.media}</span> 
-  Media Files <br>
-  ${data.person2.name} sent 
-  <span class="text-lg font-bold ${gradient}">${data.person2.message_count}</span>
-  Messages and 
-  <span class="text-lg font-bold ${gradient}">${data.person2.media}</span>
-  Media Files</p>
-
-  ${edited_text}
-
-  <p class="text-gray-400 mt-6">Your Converstation, wich was started by 
-  <span class="text-lg font-bold ${gradient}">${data.stats.first_msg.name}</span>
-  on 
-  <span class="text-lg font-bold ${gradient}">${data.time.first.day}/${data.time.first.month}/${data.time.first.year}</span>
-  continiued on until
-  <span class="text-lg font-bold ${gradient}">${data.time.last.day}/${data.time.last.month}/${data.time.last.year}</span> 
-  </p>
-
-  ${heart_text}
-
-  <p class="text-gray-400 mt-6">
-  <span class="text-lg font-bold ${gradient}">${data.person1.words + data.person2.words}</span> Words later, here we are...<br> 
-  Dear <span class="text-lg font-bold ${gradient}">${data.person1.name}</span>, you said <span class="text-lg font-bold ${gradient}">${data.person1.words}</span> Words.
-  <span class="text-lg font-bold ${gradient}">${data.person2.name}</span> on the other hand said <span class="text-lg font-bold ${gradient}">${data.person2.words}</span> Words.
+  // Helper to format large numbers
+  const formatNumber = num => num.toLocaleString();
   
-  <br><br><span class="text-blue-500 mt-6 mb-6">Wich brings us to...</span><br><br>
+  // Calculate participation percentages
+  const totalMessages = data.participants.reduce((sum, p) => sum + p.messageCount, 0);
   
-  <span class="text-lg font-bold ${gradient}">${data.person1.name},${data.person2.name}</span>. The biggest (non media) back-to-back messaging streak goes to🥁🥁🥁 <br> 
-  <span class="text-lg font-bold ${gradient}">${data.stats.combo.name}</span> with <span class="text-lg font-bold ${gradient}">${data.stats.combo.amount}</span> B2B Messages
-  </p>
+  const statsHtml = `
+    <div class="max-w-7xl mx-auto px-4">
+      <h1 class="${gradient} text-5xl font-bold mb-12 text-center animate-fade-in font-sans">
+        Hey, ${data.participants[0].name} & ${data.participants[1].name}! Here's your chat analysis. <span class="text-white">📊</span>
+      </h1>
+      
+      <!-- Overview Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        ${[
+          { label: 'Days Active', value: data.timespan.durationDays, color: 'from-emerald-400 to-teal-500' },
+          { label: 'Total Messages', value: formatNumber(totalMessages), color: 'from-sky-400 to-blue-500' },
+          { label: 'Total Words', value: formatNumber(data.raw.totalWords), color: 'from-violet-400 to-purple-500' },
+          { label: 'Media Shared', value: formatNumber(data.raw.totalMedia), color: 'from-rose-400 to-pink-500' }
+        ].map((item, index) => `
+          <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 text-center transform hover:scale-105 transition-transform duration-300 animate-slide-up" style="animation-delay: ${index * 150}ms">
+            <div class="bg-gradient-to-r ${item.color} h-2 rounded-full mb-4"></div>
+            <p class="text-white/70 text-sm uppercase font-medium">${item.label}</p>
+            <p class="text-2xl font-bold mt-2 bg-clip-text text-transparent bg-gradient-to-r ${item.color}">${item.value}</p>
+          </div>
+        `).join('')}
+      </div>
 
-  <h3 class="mt-12 text-2xl text-white font-bold">Congrats, you now know how obsessed you both are</h3>
-  <p class="text-gray-400 text-lg mt-2">I'd send them a Screenshot for the shits and giggles🤷</p>
+      <!-- Detailed Stats -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Participant Rankings -->
+        <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 hover:shadow-xl transition-shadow duration-300">
+          <h2 class="text-xl font-bold mb-6 ${gradient} font-sans">Participant Activity</h2>
+          ${data.participants
+            .sort((a, b) => b.messageCount - a.messageCount)
+            .map(p => {
+              const percentage = Math.round(p.messageCount/totalMessages*100);
+              return `
+              <div class="mb-6 last:mb-0 animate-fade-in">
+                <div class="flex justify-between items-center mb-2">
+                  <h3 class="font-medium text-white">${p.name}</h3>
+                  <span class="text-sm text-white/70">${percentage}% of chat</span>
+                </div>
+                <div class="h-2 bg-white/10 rounded-full mb-3">
+                  <div class="h-full bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full transition-all duration-1000"
+                       style="width: ${percentage}%"></div>
+                </div>
+                <div class="space-y-1 text-white/80">
+                  <div class="flex justify-between text-sm font-medium">
+                    <span>Messages: ${formatNumber(p.messageCount)}</span>
+                    <span>Words: ${formatNumber(p.wordCount)}</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="flex items-center">
+                      <span class="mr-1">😊</span> ${formatNumber(p.emojiCount)}
+                    </span>
+                    <span>✏️ ${formatNumber(p.editedCount)}</span>
+                  </div>
+                  <div class="text-sm font-medium bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
+                    ${EvaluateYapLevel(p.wordCount)}
+                  </div>
+                  <div class="text-sm">🔥 Longest streak: ${p.maxCombo} messages</div>
+                </div>
+              </div>
+            `}).join('')}
+        </div>
 
+        <!-- Activity Patterns -->
+        <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 hover:shadow-xl transition-shadow duration-300">
+          <h2 class="text-xl font-bold mb-6 ${gradient} font-sans">Time Distribution</h2>
+          ${data.participants.map(p => {
+            const maxCount = Math.max(...Object.values(p.timeDistribution));
+            return `
+            <div class="mb-6 last:mb-0">
+              <h3 class="font-medium mb-3 text-white">${p.name}</h3>
+              <div class="grid grid-cols-4 gap-2">
+                ${Object.entries(p.timeDistribution).map(([time, count], index) => `
+                  <div class="bg-white/5 rounded p-2 text-center transform hover:scale-105 transition-transform duration-300">
+                    <div class="text-xs text-white/70 uppercase font-medium">${time}</div>
+                    <div class="h-24 flex items-end justify-center mb-2">
+                      <div class="w-full bg-gradient-to-t from-violet-500 to-indigo-500 rounded-t transition-all duration-1000"
+                           style="height: ${(count / maxCount) * 100}%"></div>
+                    </div>
+                    <div class="text-lg font-medium text-white">${count}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `}).join('')}
+        </div>
+      </div>
+
+      <!-- Records Section -->
+      <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 mt-8 hover:shadow-xl transition-shadow duration-300">
+        <h2 class="text-xl font-bold mb-4 ${gradient} font-sans">Notable Records</h2>
+        <div class="text-sm space-y-2 text-white/80">
+          <p class="flex items-center">
+            <span class="inline-block w-2 h-2 bg-violet-500 rounded-full mr-2"></span>
+            Longest message: ${formatNumber(data.stats.longestMessage.words)} words
+          </p>
+          <p class="flex items-center">
+            <span class="inline-block w-2 h-2 bg-indigo-500 rounded-full mr-2"></span>
+            By ${data.stats.longestMessage.sender} on ${data.stats.longestMessage.date}
+          </p>
+          <p class="flex items-center">
+            <span class="inline-block w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+            Total emojis used: ${formatNumber(data.stats.emojis.totalCount)}
+          </p>
+        </div>
+      </div>
+    </div>
   `;
-  document.getElementById("statsdata").innerHTML = newdata;
+  
+  // Add required CSS animations
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slide-up {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-fade-in {
+      animation: fade-in 1s ease-out forwards;
+    }
+    .animate-slide-up {
+      animation: slide-up 0.5s ease-out forwards;
+    }
+  `;
+  document.head.appendChild(style);
+  
+  document.getElementById("statsdata").innerHTML = statsHtml;
 }
 
 async function Process() {
   const file = document.getElementById("filepicker").files[0];
   if (file) {
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const arrayBuffer = e.target.result;
-      JSZip.loadAsync(arrayBuffer).then(function (zip) {
-        zip.forEach(function (relativePath, zipEntry) {
-          zipEntry.async("string").then(function (content) {
-            DoStats(content);
+    if (file.type === 'text/plain') {
+      // Handle .txt files directly
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        DoStats(e.target.result);
+      };
+      reader.readAsText(file);
+    } else if (file.name.endsWith('.zip')) {
+      // Handle .zip files
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const arrayBuffer = e.target.result;
+        JSZip.loadAsync(arrayBuffer).then(function(zip) {
+          zip.forEach(function(relativePath, zipEntry) {
+            if (relativePath.endsWith('.txt')) {
+              zipEntry.async("string").then(function(content) {
+                DoStats(content);
+              });
+            }
           });
         });
-      });
-    };
-    reader.readAsArrayBuffer(file);
+      };
+      reader.readAsArrayBuffer(file);
+    }
   }
 }
-
-// do i add freaky level chat?

@@ -48,47 +48,53 @@
 <body class="bg-black flex flex-col min-h-screen">
   <div id="particles-js"></div>
 
-  <div class="flex-grow flex justify-center items-center relative z-10">
-    <div class="card">
-      <div id="texthead">
-        <h1 class="text-6xl text-white font-bold inkfree">Whats my Stats?</h1>
-        <p class="text-gray-400 text-xl mt-4">A <span class="underline">WEB</span>-App to see your stats with someone on
+  <div class="flex-grow flex justify-center items-center relative z-10 px-4 py-8">
+    <div class="card bg-slate-700/40 backdrop-blur-sm p-4 sm:p-8 rounded-2xl shadow-2xl mx-auto">
+      <div id="texthead" class="text-center">
+        <h1
+          class="text-4xl sm:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500 font-bold inkfree">
+          Whats my Stats?</h1>
+        <p class="text-gray-300 text-lg sm:text-xl mt-4">A <span class="text-pink-400 font-bold">WEB</span>-App to see
+          your stats with someone on
           Whatsapp</p>
-        <p class="text-gray-400 text-xl mt-4">Sadly, some chats, names, regions and languages aren't fully supported. <br>We try to improve the service day by day!</p>
-        <p class="text-gray-400 text-xl mt-4">We are all Browser based, so no data stored anywhere!</p>
-        <p class="text-gray-400 text-xl font-bold mt-4">SourceCode : <a class="underline text-blue-600" href="https://github.com/Space-Banane/whatsapp-stats">Click Here!</a></p>
+        <p class="text-gray-300 text-base sm:text-xl mt-4">Sadly, only English is supported as of now. Please export your chats in the english language!</p>
+        <p class="text-gray-300 text-base sm:text-xl mt-4">When exporting, chose the no-media option</p>
+        <p class="text-gray-300 text-base sm:text-xl mt-4">We are all Browser based, so no data stored anywhere!</p>
+        <p class="text-gray-300 text-base sm:text-xl font-bold mt-4">SourceCode : <a
+            class="text-blue-400 hover:text-blue-300 transition-colors"
+            href="https://github.com/Space-Banane/whatsapp-stats">Click Here!</a></p>
       </div>
-      <br><br><br>
-      <div id="fileuploader" style="display: block;">
-        <h2 class="text-white text-3xl">Choose a File!</h2>
-        <p class="text-gray-400 text-base">This has to be a .zip exported by Whatsapp</p>
-        <input class="text-white" type="file" name="filepicker" id="filepicker" min="1" max="1"> <br> <br>
+
+      <div class="my-8"></div>
+
+      <div id="fileuploader" class="bg-black/30 p-4 sm:p-6 rounded-xl backdrop-blur-sm" style="display: block;">
+        <h2 class="text-white text-2xl sm:text-3xl mb-4">Choose a File! 📁</h2>
+        <p class="text-gray-300 text-sm sm:text-base mb-4">This has to be a .zip exported by Whatsapp(no media format)</p>
+        <input class="text-white bg-purple-900/50 p-2 rounded-lg w-full mb-4" type="file" name="filepicker"
+          id="filepicker" min="1" max="1">
         <button onclick="Process()"
-          class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-purple-600 to-blue-500 group-hover:from-purple-600 group-hover:to-blue-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800">
-          <span
-            class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
-            Crunch it😋
-          </span>
+          class="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all transform hover:scale-105">
+        Crunch it 😋
         </button>
       </div>
 
-      <div id="statsdata" style="font-family: 'Courier New', Courier, monospace !important">
+      <div id="statsdata" class="text-white">
       </div>
-
     </div>
   </div>
 
   <script src="particles.js"></script>
   <script src="app.js"></script>
 
-  <footer class=" rounded-lg shadow mt-auto bg-transparent">
+  <footer class="rounded-lg shadow mt-auto bg-black/30 backdrop-blur-sm">
     <div class="w-full mx-auto max-w-screen-xl p-4 md:flex md:items-center md:justify-between">
-      <span class="text-sm text-gray-500 sm:text-center dark:text-gray-400">© 2024 <a
-          href="https://space.reversed.dev/?ref=footer" class="hover:underline">Made with ♥️ by Space | reversed.dev</a>
+      <span class="text-sm text-gray-400 sm:text-center">© 2024 <a href="https://space.reversed.dev/?ref=footer"
+          class="hover:text-purple-400 transition-colors">Made with ♥️ by Space | reversed.dev</a>
       </span>
-      <ul class="flex flex-wrap items-center mt-3 text-sm font-medium text-gray-500 dark:text-gray-400 sm:mt-0">
+      <ul class="flex flex-wrap items-center mt-3 text-sm font-medium text-gray-400 sm:mt-0">
         <li>
-          <a href="https://support.reversed.dev/?ref=spaceprofile" class="hover:underline me-4 md:me-6">Support
+          <a href="https://support.reversed.dev/?ref=spaceprofile"
+            class="hover:text-purple-400 transition-colors me-4 md:me-6">Support
             Me</a>
         </li>
       </ul>

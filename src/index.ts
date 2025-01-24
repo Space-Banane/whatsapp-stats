@@ -1,7 +1,6 @@
-import { Cors, Server } from "rjweb-server";
+import { Server } from "rjweb-server";
 import { Runtime } from "@rjweb/runtime-node";
 import { network } from "@rjweb/utils";
-import { configDotenv } from "dotenv";
 
 const server = new Server(Runtime, {
   port: 4545,
