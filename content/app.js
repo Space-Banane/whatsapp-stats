@@ -2,9 +2,9 @@ particlesJS.load("particles-js", "particles.json", function () {
   console.log("callback - particles.js config loaded");
 });
 
-// A Project that is fun to actually code
+// A Project that is fun to develop. I wouldn't read the code if I were you 😛
 
-function daysBetween(time) { // Thanks ChatGPT 😛
+function daysBetween(time) { // Thanks Copilot 😛
   const { first, last } = time;
 
   // Create Date objects for both dates
@@ -20,6 +20,7 @@ function daysBetween(time) { // Thanks ChatGPT 😛
   return Math.abs(diffInDays);
 }
 
+// This might be the smartest emoji remover thingy "I" have ever written.
 function removeEmojis(str) {
   return str.replace(/([\u203C-\u3299]|[\uD83C-\uDBFF][\uDC00-\uDFFF])/g, "");
 }
@@ -145,6 +146,8 @@ async function DoStats(content) {
       wordCount: 0,
       editedCount: 0,
       emojiCount: 0,
+      emojiUsage: {}, // Track individual emoji usage
+      mostUsedEmoji: { emoji: '', count: 0 }, // Track most used emoji
       maxCombo: 0,
       avgResponseTime: null, // in ms
       avgResponseTimeFormatted: "N/A",
@@ -237,11 +240,27 @@ async function DoStats(content) {
         };
       }
 
-      // Count emojis
-      const emojis = messageText.match(/([\u2700-\u27BF]|[\uE000-\uF8FF]|[\u2011-\u26FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDD10-\uDDFF])/g) || [];
+      // Count emojis and track individual emoji usage
+      const emojis = messageText.match(/(\uD83D[\uDE00-\uDE4F]|\uD83C[\uDDE6-\uDDFF])/g) || [];
 
       participant.emojiCount += emojis.length;
       data.stats.emojis.totalCount += emojis.length;
+      
+      // Track individual emoji usage
+      emojis.forEach(emoji => {
+        if (!participant.emojiUsage[emoji]) {
+          participant.emojiUsage[emoji] = 0;
+        }
+        participant.emojiUsage[emoji]++;
+        
+        // Update most used emoji for this participant
+        if (participant.emojiUsage[emoji] > participant.mostUsedEmoji.count) {
+          participant.mostUsedEmoji = {
+            emoji: emoji,
+            count: participant.emojiUsage[emoji]
+          };
+        }
+      });
     }
 
     // Track edited messages
@@ -397,6 +416,11 @@ function renderStats() {
             <span class="inline-block w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
             Total emojis used: ${formatNumber(data.stats.emojis.totalCount)}
           </p>
+          ${data.participants.map(p => p.mostUsedEmoji.emoji ? `
+            <p class="flex items-center">
+              <span class="inline-block w-2 h-2 bg-pink-500 rounded-full mr-2"></span>
+              ${p.name}'s favorite emoji: ${p.mostUsedEmoji.emoji} (used ${formatNumber(p.mostUsedEmoji.count)} times)
+            </p>` : '').join('')}
         </div>
       </div>
     </div>

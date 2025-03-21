@@ -1,108 +1,54 @@
 <!doctype html>
-<html>
-
+<html lang="en">
 <head>
-  <link rel="stylesheet" href="final.css" />
   <meta charset="UTF-8" />
-
-
-  <title id="meta_title">WhatsApp Stats | Analyze Your Chat Data</title>
-  <meta name="description" content="Analyze your WhatsApp chat statistics by uploading a ZIP file of your chat data" />
-  <meta name="author" content="Paul" />
+  <title>WhatsApp Stats</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="keywords" content="WhatsApp, Chat, Statistics, Analytics, Upload, Zip File, reversed.dev">
+  <meta name="description" content="Analyze your WhatsApp chat statistics by uploading a ZIP file of your chat data." />
+  <meta property="og:title" content="WhatsApp Stats">
+  <meta property="og:description" content="Analyze your WhatsApp chat statistics by uploading a ZIP file of your chat data.">
+  <meta property="og:image" content="https://cdn.reversed.dev/pictures/whatsapp.png">
+  <meta property="og:url" content="https://whatstat.reversed.dev">
+  <meta property="og:type" content="website">
 
-  <meta property="og:site_name" content="WhatsApp Stats | Analyze Your Chat Data" />
-  <meta property="og:title" content="WhatsApp Stats | Analyze Your Chat Data" />
-  <meta property="og:description"
-    content="Easily view detailed statistics of your WhatsApp chats by uploading a ZIP file of your data" />
-  <meta property="og:image" content="https://cdn.reversed.dev/pictures/whatsapp.png" />
-  <meta property="og:url" content="https://whatsapp.reversed.dev" />
-  <meta property="og:type" content="website" />
-
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:site" content="WhatsAppStats_App">
-  <meta name="twitter:creator" content="WhatsAppStats_App">
-  <meta name="twitter:url" content="https://whatsapp.reversed.dev" />
-  <meta name="twitter:title" content="WhatsApp Stats | Analyze Your Chat Data">
-  <meta name="twitter:description"
-    content="Get insights from your WhatsApp chats by uploading a ZIP file of your chat data">
-
-  <meta name="coverage" content="Worldwide">
-  <meta name="distribution" content="Global">
-  <meta name="rating" content="General">
-  <meta name="revisit-after" content="3 days">
-  <meta name="target" content="all">
-  <meta name="language" content="English" />
-
-  <meta name="googlebot" content="all" />
-  <meta name="googlebot-news" content="all" />
-  <meta name="google" content="notranslate" />
-  <meta name="robots" content="max-snippet:[80]" />
-
+  <link rel="stylesheet" href="final.css" />
   <script src="/jszip.min.js"></script>
-
   <script src="/apexcharts.js"></script>
-
-  <meta name="darkreader-lock" />
 </head>
-
 <body class="bg-black flex flex-col min-h-screen">
   <div id="particles-js"></div>
 
   <div class="flex-grow flex justify-center items-center relative z-10 px-4 py-8">
     <div class="card bg-slate-700/40 backdrop-blur-sm p-4 sm:p-8 rounded-2xl shadow-2xl mx-auto">
       <div id="texthead" class="text-center">
-        <h1
-          class="text-4xl sm:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500 font-bold inkfree">
-          Whats my Stats?</h1>
-        <p class="text-gray-300 text-lg sm:text-xl mt-4">A <span class="text-pink-400 font-bold">WEB</span>-App to see
-          your stats with someone on
-          Whatsapp</p>
-        <p class="text-gray-300 text-base sm:text-xl mt-4">Sadly, only English is supported as of now. Please export your chats in the english language!</p>
-        <p class="text-gray-300 text-base sm:text-xl mt-4">When exporting, chose the no-media option</p>
-        <p class="text-gray-300 text-base sm:text-xl mt-4">We are all Browser based, so no data stored anywhere!</p>
-        <p class="text-gray-300 text-base sm:text-xl mt-4">One more thing, only exports from Android work. As the IOS format is very weird</p>
-        <p class="text-gray-300 text-base sm:text-xl font-bold mt-4">SourceCode : <a
-            class="text-blue-400 hover:text-blue-300 transition-colors"
-            href="https://github.com/Space-Banane/whatsapp-stats">Click Here!</a></p>
+        <h1 class="text-4xl sm:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500 font-bold">
+          Whats my Stats?
+        </h1>
+        <p class="text-gray-300 mt-4">Ever wanted to know how much you chat with your friends? Or who sends the most messages? Well, look no further!</p>
+        <p class="text-gray-300 mt-4">Analyze your WhatsApp chats on the fly by uploading a Chat Export. Only English chats exported from a Android Device supported (for now). <br> Feature avalibility may vary from OS and App version.</p>
+        <p class="text-gray-300 mt-4">Source code is available on <a class="text-blue-400 hover:text-blue-300 transition-colors" href="https://github.com/Space-Banane/whatsapp-stats" target="_blank">GitHub</a>.</p>
       </div>
 
-      <div class="my-8"></div>
-
-      <div id="fileuploader" class="bg-black/30 p-4 sm:p-6 rounded-xl backdrop-blur-sm" style="display: block;">
-        <h2 class="text-white text-2xl sm:text-3xl mb-4">Choose a File! 📁</h2>
-        <p class="text-gray-300 text-sm sm:text-base mb-4">This has to be a .zip exported by Whatsapp(no media format)</p>
-        <input class="text-white bg-purple-900/50 p-2 rounded-lg w-full mb-4" type="file" name="filepicker"
-          id="filepicker" min="1" max="1">
+      <div id="fileuploader" class="bg-black/30 p-4 rounded-xl backdrop-blur-sm mt-6">
+        <h2 class="text-white text-2xl mb-4">Let's get Yapping</h2>
+        <p class="text-gray-300 text-sm mb-4">Select a .zip file exported by WhatsApp (no media included).</p>
+        <input class="text-white bg-purple-900/50 p-2 rounded-lg w-full mb-4" type="file" id="filepicker">
         <button onclick="Process()"
-          class="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all transform hover:scale-105">
-        Crunch it 😋
+          class="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:from-purple-600 hover:to-blue-600 transition transform hover:scale-105">
+          Crunch it 😋
         </button>
       </div>
 
-      <div id="statsdata" class="text-white">
-      </div>
+      <div id="statsdata" class="text-white mt-4"></div>
     </div>
   </div>
 
   <script src="particles.js"></script>
   <script src="app.js"></script>
 
-  <footer class="rounded-lg shadow mt-auto bg-black/30 backdrop-blur-sm">
-    <div class="w-full mx-auto max-w-screen-xl p-4 md:flex md:items-center md:justify-between">
-      <span class="text-sm text-gray-400 sm:text-center">© 2024 <a href="https://space.reversed.dev/?ref=footer"
-          class="hover:text-purple-400 transition-colors">Made with ♥️ by Space | reversed.dev</a>
-      </span>
-      <ul class="flex flex-wrap items-center mt-3 text-sm font-medium text-gray-400 sm:mt-0">
-        <li>
-          <a href="https://support.reversed.dev/?ref=spaceprofile"
-            class="hover:text-purple-400 transition-colors me-4 md:me-6">Support
-            Me</a>
-        </li>
-      </ul>
-    </div>
+  <footer class="mt-auto bg-black/30 backdrop-blur-sm p-4 text-center text-gray-400">
+    © 2025 <a href="https://space.reversed.dev/?ref=footer" class="hover:text-purple-400 transition-colors">Space | reversed.dev</a>
   </footer>
 </body>
-
 </html>
+<!-- If you are reading this, i am sorry for you. -->
