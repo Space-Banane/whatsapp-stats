@@ -53,15 +53,15 @@ function countConsecutiveMessages(messages) {
 }
 
 function EvaluateYapLevel(words) {
-  if (words < 1000) return "Casual Chatter 🌱";
-  if (words < 5000) return "Friendly Conversationalist 😊";
-  if (words < 10000) return "Message Master 🎯";
-  if (words < 20000) return "Chat Enthusiast ⭐";
-  if (words < 50000) return "Social Butterfly 🦋";
-  if (words < 100000) return "Conversation Champion 👑";
-  if (words < 200000) return "Legendary Communicator 🌟";
-  if (words < 500000) return "Chat Guru 🙏";
-  return "Ultimate Message Maven ✨";
+  if (words < 1000) return "Barely chatting, quiet start 🌱";
+  if (words < 5000) return "You chat like a cheerful chatterbox 😊";
+  if (words < 10000) return "Wow, so much talk—non-stop chatter 🎯";
+  if (words < 20000) return "Holy smokes, you're on a roll! Non-stop speaker ⭐";
+  if (words < 50000) return "Social Butterfly? More like a social drone 🦋";
+  if (words < 100000) return "Chat Champion? You're just very vocal 👑";
+  if (words < 200000) return "Legendary Communicator? Truly a relentless chatterbox 🌟";
+  if (words < 500000) return "Chat Guru? Maybe ease up a bit 🙏";
+  return "Ultimate Message Maven? King of nonstop chatter ✨";
 }
 
 // Helper to format durations (ms) into HH:MM:SS
