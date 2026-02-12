@@ -1,6 +1,6 @@
 services:
   server:
-    image: node:22
+    image: node:24
     container_name: whatsapp-stats
     ports:
       - "6767:4545"
