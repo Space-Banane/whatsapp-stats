@@ -36,12 +36,7 @@ The application will be available at `http://localhost:6767`.
    pnpm install
    ```
 
-2. **Generate CSS (Tailwind):**
-   ```bash
-   pnpm tailwind
-   ```
-
-3. **Start the development server:**
+2. **Start the development server:**
    ```bash
    pnpm dev
    ```

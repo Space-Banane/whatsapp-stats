@@ -1,19 +1,33 @@
 {
+  "name": "newui",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "rm -rf dist && esbuild `find src \\( -name '*.ts' -o -name '*.tsx' \\)` --platform='node' --sourcemap --ignore-annotations --format='cjs' --target='es2022' --outdir='dist' && cd dist && node index.js && cd ..",
-    "tailwind": "npx tailwindcss -i ./content/base.css -o ./content/final.css --watch"
+    "build": "react-router build",
+    "dev": "react-router dev",
+    "start": "react-router-serve ./build/server/index.js",
+    "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
-    "@rjweb/runtime-node": "^1.1.1",
-    "@rjweb/utils": "^1.12.21",
-    "axios": "^1.7.3",
-    "dotenv": "^16.4.5",
-    "esbuild": "^0.21.5",
-    "redis": "^4.7.0",
-    "rjweb-server": "^9.7.0",
-    "tailwindcss": "^3.4.7"
+    "@react-router/node": "7.12.0",
+    "@react-router/serve": "7.12.0",
+    "@zip.js/zip.js": "^2.8.20",
+    "apexcharts": "^5.4.0",
+    "isbot": "^5.1.31",
+    "react": "^19.2.4",
+    "react-apexcharts": "^1.9.0",
+    "react-dom": "^19.2.4",
+    "react-router": "7.12.0"
   },
   "devDependencies": {
-    "@types/node": "^20.14.14"
+    "@react-router/dev": "7.12.0",
+    "@tailwindcss/vite": "^4.1.13",
+    "@types/node": "^22",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "tailwindcss": "^4.1.13",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.7",
+    "vite-tsconfig-paths": "^5.1.4"
   }
 }
