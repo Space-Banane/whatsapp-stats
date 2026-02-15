@@ -4,7 +4,7 @@ services:
     container_name: whatsapp-stats
     ports:
       - "6767:4545"
-    entrypoint: /bin/sh -c "npm install -g pnpm && pnpm i && pnpm build && pnpm i -g serve && serve -s build/client -l 4545"
+    entrypoint: /bin/sh -c "npm install -g pnpm && pnpm i && pnpm build && npm i -g serve && serve -s build/client -l 4545"
     working_dir: /app
     volumes:
       - .:/app
