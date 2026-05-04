@@ -5,14 +5,10 @@ import {
   useTransition,
   type ChangeEvent,
   useRef,
-  memo,
-  useCallback,
-  useEffect,
 } from "react";
 import { BlobReader } from "@zip.js/zip.js";
 import { ZipReader, TextWriter } from "@zip.js/zip.js";
 import Chart from "react-apexcharts";
-import type { ApexOptions } from "apexcharts";
 import { 
   type Message, 
   parseWhatsAppChat, 
@@ -20,6 +16,12 @@ import {
   calculateDeepStats, 
   MINIMUM_EMOJI_OCCURRENCE
 } from "../logic/whatsapp";
+import {
+  buildDailyChartOptions,
+  buildHourlyBreakup,
+  buildWholeChatInsights,
+} from "./stats.helpers";
+import { MessageRow } from "../components/MessageRow";
 
 export function meta({}) {
   return [
@@ -32,35 +34,12 @@ export function meta({}) {
   ];
 }
 
-// 1. Memoized component for row performance
-const MessageRow = memo(({ m }: { m: Message }) => (
-  <div
-    className={`group flex flex-col ${m.isSystem ? "items-center py-2" : "items-start"}`}
-  >
-    {!m.isSystem && (
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-xs font-black text-green-500 tracking-wide uppercase">
-          {m.sender}
-        </span>
-        <span className="text-[10px] text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
-          {m.date} {m.time}
-        </span>
-      </div>
-    )}
-    <div
-      className={`${m.isSystem ? "bg-gray-800/50 text-gray-500 text-[11px] px-4 py-1.5" : "bg-gray-800 text-gray-200 px-5 py-3"} rounded-2xl max-w-[85%] whitespace-pre-wrap leading-relaxed border border-transparent hover:border-gray-700 transition-colors`}
-    >
-      {m.content}
-    </div>
-  </div>
-));
-MessageRow.displayName = "MessageRow";
-
 export default function Stats() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [status, setStatus] = useState<"idle" | "parsing" | "ready">("idle");
   // Modal state for streak/active days info
   const [showStreakModal, setShowStreakModal] = useState(false);
+  const [showCurrentStreakModal, setShowCurrentStreakModal] = useState(false);
   const [showActiveDaysModal, setShowActiveDaysModal] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "chatlog" | "deep">(
     "overview",
@@ -207,6 +186,40 @@ export default function Stats() {
     return { firstMsg, lastMsg };
   }, [deepStats, messages]);
 
+  const currentStreakInfo = useMemo(() => {
+    if (!deepStats || messages.length === 0) return null;
+    const nonSystem = messages.filter((m) => !m.isSystem);
+    const dateMap = new Map();
+    nonSystem.forEach((m) => {
+      if (!dateMap.has(m.date)) dateMap.set(m.date, true);
+    });
+    const sortedDates = Array.from(dateMap.keys()).sort(
+      (a, b) => new Date(a).getTime() - new Date(b).getTime(),
+    );
+    if (sortedDates.length === 0) return null;
+
+    let streakStartIdx = sortedDates.length - 1;
+    for (let i = sortedDates.length - 1; i > 0; i--) {
+      const diffMs =
+        new Date(sortedDates[i]).getTime() -
+        new Date(sortedDates[i - 1]).getTime();
+      if (diffMs === 86400000) {
+        streakStartIdx = i - 1;
+      } else {
+        break;
+      }
+    }
+
+    const streakStartDate = sortedDates[streakStartIdx];
+    const streakEndDate = sortedDates[sortedDates.length - 1];
+    const firstMsg = nonSystem.find((m) => m.date === streakStartDate);
+    const lastMsg = [...nonSystem]
+      .reverse()
+      .find((m) => m.date === streakEndDate);
+
+    return { firstMsg, lastMsg };
+  }, [deepStats, messages]);
+
   const activeDaysInfo = useMemo(() => {
     if (!deepStats || messages.length === 0) return null;
     const nonSystem = messages.filter((m) => !m.isSystem);
@@ -214,35 +227,15 @@ export default function Stats() {
     return { firstMsg: sorted[0], lastMsg: sorted[sorted.length - 1] };
   }, [deepStats, messages]);
 
-  const chartOptions: ApexOptions = {
-    chart: {
-        type: "area",
-        toolbar: { show: false },
-        background: "transparent",
-    },
-    theme: { mode: "dark" },
-    stroke: { curve: "smooth", colors: ["#22c55e"] },
-    fill: {
-        type: "gradient",
-        gradient: {
-            shadeIntensity: 1,
-            opacityFrom: 0.7,
-            opacityTo: 0.3,
-            stops: [0, 90, 100],
-            colorStops: [ {color: "#22c55e", offset: 0, opacity: 0.5}, {color: "#22c55e", offset: 100, opacity: 0} ]
-        }
-    },
-    dataLabels: { enabled: false },
-    xaxis: {
-        categories: deepStats?.graphCategories || [],
-        labels: { show: false }, // Hide labels if too many
-        axisBorder: { show: false },
-        axisTicks: { show: false },
-        tooltip: { enabled: false }
-    },
-    grid: { borderColor: "#374151" },
-    tooltip: { theme: "dark" }
-  };
+  const chartOptions = useMemo(
+    () => buildDailyChartOptions(deepStats?.graphCategories || []),
+    [deepStats?.graphCategories],
+  );
+  const hourlyBreakup = useMemo(() => buildHourlyBreakup(messages), [messages]);
+  const wholeChatInsights = useMemo(
+    () => (deepStats ? buildWholeChatInsights(deepStats) : []),
+    [deepStats],
+  );
 
   if (status !== "ready") {
     return (
@@ -454,7 +447,7 @@ export default function Stats() {
         {activeTab === "deep" && deepStats && (
           <div className="space-y-6">
             {/* Top Row: Global Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="bg-gray-900 p-6 rounded-3xl border border-gray-800 relative">
                 <h4 className="text-gray-500 text-xs font-bold uppercase">Longest Day Streak</h4>
                 <p className="text-4xl font-black text-white mt-2">{deepStats.maxDaysStreak} <span className="text-lg text-gray-600">days</span></p>
@@ -462,6 +455,17 @@ export default function Stats() {
                   className="absolute bottom-4 right-4 text-xs px-3 py-1 bg-gray-800 text-green-400 rounded-full border border-green-700 hover:bg-green-900/60 transition"
                   onClick={() => setShowStreakModal(true)}
                   title="Show streak details"
+                >
+                  Info
+                </button>
+              </div>
+              <div className="bg-gray-900 p-6 rounded-3xl border border-gray-800 relative">
+                <h4 className="text-gray-500 text-xs font-bold uppercase">Current Active Streak</h4>
+                <p className="text-4xl font-black text-white mt-2">{deepStats.currentActiveDaysStreak} <span className="text-lg text-gray-600">days</span></p>
+                <button
+                  className="absolute bottom-4 right-4 text-xs px-3 py-1 bg-gray-800 text-green-400 rounded-full border border-green-700 hover:bg-green-900/60 transition"
+                  onClick={() => setShowCurrentStreakModal(true)}
+                  title="Show current streak details"
                 >
                   Info
                 </button>
@@ -496,6 +500,31 @@ export default function Stats() {
                             <div>
                               <span className="font-bold text-green-400">End:</span> {streakInfo.lastMsg?.date} {streakInfo.lastMsg?.time} — <span className="font-semibold">{streakInfo.lastMsg?.sender}</span>
                               <div className="bg-gray-800 text-gray-200 rounded-xl px-4 py-2 mt-1 text-xs">{streakInfo.lastMsg?.content}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Current Active Streak Modal */}
+                    {showCurrentStreakModal && currentStreakInfo && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                        <div className="bg-gray-900 border border-green-900/50 p-8 rounded-3xl max-w-md w-full shadow-2xl relative">
+                          <button
+                            className="absolute top-4 right-4 text-gray-400 hover:text-white text-xl font-bold"
+                            onClick={() => setShowCurrentStreakModal(false)}
+                            aria-label="Close"
+                          >&times;</button>
+                          <h3 className="text-2xl font-black text-green-500 mb-2">Current Active Streak</h3>
+                          <div className="text-gray-300 text-sm mb-4">First and last message in the current streak:</div>
+                          <div className="mb-4">
+                            <div className="mb-2">
+                              <span className="font-bold text-green-400">Start:</span> {currentStreakInfo.firstMsg?.date} {currentStreakInfo.firstMsg?.time} — <span className="font-semibold">{currentStreakInfo.firstMsg?.sender}</span>
+                              <div className="bg-gray-800 text-gray-200 rounded-xl px-4 py-2 mt-1 text-xs">{currentStreakInfo.firstMsg?.content}</div>
+                            </div>
+                            <div>
+                              <span className="font-bold text-green-400">End:</span> {currentStreakInfo.lastMsg?.date} {currentStreakInfo.lastMsg?.time} — <span className="font-semibold">{currentStreakInfo.lastMsg?.sender}</span>
+                              <div className="bg-gray-800 text-gray-200 rounded-xl px-4 py-2 mt-1 text-xs">{currentStreakInfo.lastMsg?.content}</div>
                             </div>
                           </div>
                         </div>
@@ -569,6 +598,25 @@ export default function Stats() {
                </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-gray-900 p-6 rounded-3xl border border-gray-800">
+                <h4 className="text-gray-500 text-xs font-bold uppercase">Avg Words / Message</h4>
+                <p className="text-4xl font-black text-white mt-2">{deepStats.avgWordsPerMessage.toFixed(1)}</p>
+              </div>
+              <div className="bg-gray-900 p-6 rounded-3xl border border-gray-800">
+                <h4 className="text-gray-500 text-xs font-bold uppercase">Links Shared</h4>
+                <p className="text-4xl font-black text-cyan-400 mt-2">{deepStats.totalLinks.toLocaleString()}</p>
+              </div>
+              <div className="bg-gray-900 p-6 rounded-3xl border border-gray-800">
+                <h4 className="text-gray-500 text-xs font-bold uppercase">Question Marks</h4>
+                <p className="text-4xl font-black text-amber-400 mt-2">{deepStats.totalQuestions.toLocaleString()}</p>
+              </div>
+              <div className="bg-gray-900 p-6 rounded-3xl border border-gray-800">
+                <h4 className="text-gray-500 text-xs font-bold uppercase">Deleted Messages</h4>
+                <p className="text-4xl font-black text-rose-400 mt-2">{deepStats.totalDeleted.toLocaleString()}</p>
+              </div>
+            </div>
+
             {/* Chat Stat Card */}
             <div className="bg-gray-900 p-8 rounded-[2rem] border border-gray-800 border-t-4 border-t-green-600">
               <div className="flex flex-col md:flex-row justify-between gap-8">
@@ -606,9 +654,71 @@ export default function Stats() {
                       </div>
                     </div>
                   </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                    <div className="p-4 bg-black/30 rounded-xl border border-gray-800/50">
+                      <div className="text-xs text-gray-500 uppercase font-black mb-1">Most Active Weekday</div>
+                      <div className="text-xl font-black text-green-400">
+                        {deepStats.mostActiveWeekday?.label || "N/A"}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {deepStats.mostActiveWeekday ? `${deepStats.mostActiveWeekday.total} messages` : "No data"}
+                      </div>
+                    </div>
+                    <div className="p-4 bg-black/30 rounded-xl border border-gray-800/50">
+                      <div className="text-xs text-gray-500 uppercase font-black mb-1">Fastest Responder</div>
+                      <div className="text-xl font-black text-cyan-400">
+                        {deepStats.fastestResponder?.sender || "N/A"}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {deepStats.fastestResponder
+                          ? `${deepStats.fastestResponder.avgReplyMinutes.toFixed(1)} min avg reply`
+                          : "No reply chain data"}
+                      </div>
+                    </div>
+                    <div className="p-4 bg-black/30 rounded-xl border border-gray-800/50">
+                      <div className="text-xs text-gray-500 uppercase font-black mb-1">Longest Message</div>
+                      <div className="text-xl font-black text-amber-300">
+                        {deepStats.longestMessage?.sender || "N/A"}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {deepStats.longestMessage
+                          ? `${deepStats.longestMessage.words} words`
+                          : "No text messages"}
+                      </div>
+                    </div>
+                    <div className="p-4 bg-black/30 rounded-xl border border-gray-800/50">
+                      <div className="text-xs text-gray-500 uppercase font-black mb-1">Slowest Responder</div>
+                      <div className="text-xl font-black text-rose-400">
+                        {deepStats.slowestResponder?.sender || "N/A"}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {deepStats.slowestResponder
+                          ? `${deepStats.slowestResponder.avgReplyMinutes.toFixed(1)} min avg reply`
+                          : "No reply chain data"}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+
+              <div className="bg-gray-900 p-6 rounded-3xl border border-gray-800">
+                <h3 className="text-xl font-bold text-white">More Whole-Chat Insights</h3>
+                <p className="text-gray-400 text-sm mb-4">
+                  Additional quick takeaways computed from the entire dataset.
+                </p>
+                <div className="space-y-2">
+                  {wholeChatInsights.map((line) => (
+                    <div
+                      key={line}
+                      className="text-sm text-gray-200 bg-black/30 border border-gray-800/50 rounded-xl px-4 py-3"
+                    >
+                      {line}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               {/* Time of Day Bar Graph */}
               <div className="bg-gray-900 p-6 rounded-3xl border border-gray-800">
@@ -659,30 +769,27 @@ export default function Stats() {
                 <div className="bg-gray-900 p-6 rounded-3xl border border-gray-800 mt-8">
                   <h3 className="text-xl font-bold text-white">Hourly Activity</h3>
                   <p className="text-gray-400 text-sm mb-4">
-                    Every hour on the clock, how many messages do you send? Let's see if you're a night owl or an early bird!
+                    Every hour on the clock, with a person-level breakup for who drove that hour.
                   </p>
                   <div className="flex gap-4 items-end h-48 overflow-x-auto">
                     {(() => {
-                      // Build hourly totals from messages
-                      const hourlyTotals: number[] = Array(24).fill(0);
-                      messages.forEach((m) => {
-                        if (!m.isSystem) {
-                          const hour = parseInt(m.time.split(":")[0], 10);
-                          if (!isNaN(hour)) hourlyTotals[hour]++;
-                        }
-                      });
-                      const max = Math.max(...hourlyTotals, 1);
-                      return hourlyTotals.map((count, hour) => (
-                        <div key={hour} className="flex flex-col items-center w-8">
+                      const max = Math.max(...hourlyBreakup.map((h) => h.total), 1);
+                      return hourlyBreakup.map((row) => {
+                        const topPerson = Object.entries(row.byPerson).sort((a, b) => b[1] - a[1])[0];
+                        return (
+                        <div key={row.hour} className="flex flex-col items-center w-10">
                           <div
                             className="bg-green-600 rounded-t-xl transition-all w-full"
-                            style={{ height: `${(count / max) * 140 + 8}px`, minHeight: 8 }}
-                            title={`Hour ${hour}: ${count} messages`}
+                            style={{ height: `${(row.total / max) * 140 + 8}px`, minHeight: 8 }}
+                            title={`Hour ${row.hour}: ${row.total} messages`}
                           />
-                          <span className="text-xs text-gray-400 mt-1 font-mono">{hour.toString().padStart(2, "0")}</span>
-                          <span className="text-[10px] text-gray-600">{count}</span>
+                          <span className="text-xs text-gray-400 mt-1 font-mono">{row.hour.toString().padStart(2, "0")}</span>
+                          <span className="text-[10px] text-gray-600">{row.total}</span>
+                          <span className="text-[9px] text-gray-500 truncate max-w-full">
+                            {topPerson ? `${topPerson[0]} (${topPerson[1]})` : "-"}
+                          </span>
                         </div>
-                      ));
+                      )});
                     })()}
                   </div>
                 </div>
@@ -782,6 +889,16 @@ export default function Stats() {
                                     <div className="text-xs text-gray-500 uppercase font-bold">Emojis used</div>
                                     <div className="text-xl font-bold text-gray-200">{p.emojis.toLocaleString()}</div>
                                 </div>
+                                <div className="p-4 bg-gray-800/50 rounded-2xl">
+                                    <div className="text-xs text-gray-500 uppercase font-bold">Avg Words / Message</div>
+                                    <div className="text-xl font-bold text-gray-200">{p.avgWordsPerMessage.toFixed(1)}</div>
+                                </div>
+                                <div className="p-4 bg-gray-800/50 rounded-2xl">
+                                    <div className="text-xs text-gray-500 uppercase font-bold">Avg Reply Time</div>
+                                    <div className="text-xl font-bold text-gray-200">
+                                      {p.avgReplyMinutes == null ? "N/A" : `${p.avgReplyMinutes.toFixed(1)} min`}
+                                    </div>
+                                </div>
                                 <div className="p-4 bg-gray-800/50 rounded-2xl col-span-2">
                                     <div className="text-xs text-gray-500 uppercase font-black mb-1">Top Word</div>
                                     <div className="text-2xl font-black text-green-500">
@@ -821,6 +938,30 @@ export default function Stats() {
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Edited Messages</span>
                                     <span className="text-gray-300 font-mono">{p.edited}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Deleted Messages</span>
+                                    <span className="text-gray-300 font-mono">{p.deleted}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Links Shared</span>
+                                    <span className="text-gray-300 font-mono">{p.links}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Question Marks</span>
+                                    <span className="text-gray-300 font-mono">{p.questions}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Fastest Reply</span>
+                                    <span className="text-gray-300 font-mono">
+                                      {p.fastestReplyMinutes == null ? "N/A" : `${p.fastestReplyMinutes.toFixed(1)} min`}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Slowest Reply</span>
+                                    <span className="text-gray-300 font-mono">
+                                      {p.slowestReplyMinutes == null ? "N/A" : `${p.slowestReplyMinutes.toFixed(1)} min`}
+                                    </span>
                                 </div>
                             </div>
                         </div>
