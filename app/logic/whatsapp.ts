@@ -9,6 +9,7 @@ export interface Message {
   sender: string;
   content: string;
   isSystem?: boolean;
+  mentions?: string[];
 }
 
 export interface ParticipantStat {
@@ -27,12 +28,14 @@ export interface ParticipantStat {
   fastestReplyMinutes: number | null;
   slowestReplyMinutes: number | null;
   timesOfDay: Record<string, number>;
-  emojiCounts?: Record<string, number>; // emoji -> count
-  topEmojis?: string[]; // top 3 emojis
-  leastEmojis?: string[]; // least 3 emojis
+  emojiCounts?: Record<string, number>;
+  topEmojis?: string[];
+  leastEmojis?: string[];
   mostSaidWord?: { word: string; count: number };
   topDays?: { date: string; count: number }[];
   msgsPerDate?: Record<string, number>;
+  mentionsSent: number;
+  mentionsReceived: number;
 }
 
 export interface TimeOfDayBar {
@@ -53,6 +56,7 @@ export interface DeepStats {
   totalLinks: number;
   totalQuestions: number;
   avgWordsPerMessage: number;
+  isGroupChat: boolean;
   participants: Record<string, ParticipantStat>;
   graphSeries: { name: string; data: number[] }[];
   graphCategories: string[];
@@ -72,22 +76,52 @@ export interface DeepStats {
   mostActiveBar?: { label: string; topSender: string; total: number };
   mostSaidWord?: { word: string; count: number };
   topDays?: { date: string; count: number }[];
+  mostMentioned?: { sender: string; count: number };
+  topMentioner?: { sender: string; count: number };
 }
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
+// Matches both 24h (HH:MM) and 12h (H:MM AM/PM) time formats
+const DATE_LINE_REGEX = /^(\d{1,2}\/\d{1,2}\/\d{2,4}),\s(\d{1,2}:\d{2}(?:\s?[AaPp][Mm])?)\s-\s/;
+
+// Patterns that indicate media was shared (covers Android "<Media omitted>" and iOS locale variants)
+const MEDIA_OMITTED_PATTERN = /^(<Media omitted>|‎?(image|video|audio|sticker|document|gif|Contact Card) omitted\.?)$/i;
+
+// Comprehensive emoji regex: covers all major emoji blocks including dingbats and newer additions
+const EMOJI_REGEX = /[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]/gu;
+
+function extractMentions(content: string): string[] {
+  const mentions: string[] = [];
+  // WhatsApp wraps mentioned names in U+2068 (FIRST STRONG ISOLATE) and U+2069 (POP DIRECTIONAL ISOLATE)
+  const regex = /@⁨([^⁩\n]+)⁩/g;
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    mentions.push(match[1].trim());
+  }
+  return mentions;
+}
+
 function parseWhatsAppDateTime(date: string, time: string): Date | null {
   const dateMatch = date.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-  const timeMatch = time.match(/^(\d{1,2}):(\d{2})$/);
+  const timeMatch = time.trim().match(/^(\d{1,2}):(\d{2})(?:\s?([AaPp][Mm]))?$/);
   if (!dateMatch || !timeMatch) return null;
 
   let first = parseInt(dateMatch[1], 10);
   let second = parseInt(dateMatch[2], 10);
   let year = parseInt(dateMatch[3], 10);
-  const hour = parseInt(timeMatch[1], 10);
+  let hour = parseInt(timeMatch[1], 10);
   const minute = parseInt(timeMatch[2], 10);
+  const meridiem = timeMatch[3]?.toUpperCase();
 
   if (year < 100) year += 2000;
+
+  // Convert 12-hour to 24-hour
+  if (meridiem === "AM") {
+    if (hour === 12) hour = 0;
+  } else if (meridiem === "PM") {
+    if (hour !== 12) hour += 12;
+  }
 
   let day = first;
   let month = second;
@@ -118,11 +152,10 @@ function parseWhatsAppDateTime(date: string, time: string): Date | null {
 export function parseWhatsAppChat(text: string): Message[] {
   const lines = text.split(/\r?\n/);
   const parsed: Message[] = [];
-  const dateRegex = /^(\d{1,2}\/\d{1,2}\/\d{2,4}),\s(\d{1,2}:\d{2})\s-\s/;
 
   lines.forEach((line) => {
     if (!line.trim()) return;
-    const match = line.match(dateRegex);
+    const match = line.match(DATE_LINE_REGEX);
 
     if (match) {
       const [fullMatch, date, time] = match;
@@ -130,16 +163,19 @@ export function parseWhatsAppChat(text: string): Message[] {
       const senderLineMatch = remaining.match(/^([^:]+):\s(.*)$/);
 
       if (senderLineMatch) {
+        const content = senderLineMatch[2];
+        const mentions = extractMentions(content);
         parsed.push({
           date,
-          time,
+          time: time.trim(),
           sender: senderLineMatch[1],
-          content: senderLineMatch[2],
+          content,
+          mentions: mentions.length > 0 ? mentions : undefined,
         });
       } else {
         parsed.push({
           date,
-          time,
+          time: time.trim(),
           sender: "System",
           content: remaining,
           isSystem: true,
@@ -190,10 +226,13 @@ export function calculateDeepStats(messages: Message[]): DeepStats | null {
         preview: string;
       }
     | undefined;
-  
+
   // Word counting (total and per participant)
   const totalWordCounts: Record<string, number> = {};
   const participantWordCounts: Record<string, Record<string, number>> = {};
+
+  // Mention tracking: accumulate received mentions by name string (participants may not be init'd yet)
+  const mentionsReceivedRaw: Record<string, number> = {};
 
   // -- Date Processing for Streaks & Graph --
   const msgsByDate: Record<string, number> = {};
@@ -201,11 +240,7 @@ export function calculateDeepStats(messages: Message[]): DeepStats | null {
   const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const weekdayCounts = Array(7).fill(0) as number[];
 
-  // Simple Emoji Regex (Basic Range)
-  const emojiRegex = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu;
-
   // For time of day bars
-  // Define time buckets: Night (0-5), Morning (6-11), Afternoon (12-17), Evening (18-23)
   const timeBuckets = [
     { label: "Night", range: [0, 5] },
     { label: "Morning", range: [6, 11] },
@@ -242,6 +277,8 @@ export function calculateDeepStats(messages: Message[]): DeepStats | null {
         topEmojis: [],
         msgsPerDate: {},
         topDays: [],
+        mentionsSent: 0,
+        mentionsReceived: 0,
       };
       participantWordCounts[m.sender] = {};
       participantTextMessages[m.sender] = 0;
@@ -252,7 +289,7 @@ export function calculateDeepStats(messages: Message[]): DeepStats | null {
     p.msgCount++;
 
     // Content Checks
-    const isMedia = m.content.includes("<Media omitted>");
+    const isMedia = MEDIA_OMITTED_PATTERN.test(m.content.trim());
     const isDeleted = /(?:this message was deleted|you deleted this message)/i.test(m.content);
     const isEdited = m.content.includes("<This message was edited>");
     const links = m.content.match(/(?:https?:\/\/|www\.)\S+/gi) || [];
@@ -269,7 +306,7 @@ export function calculateDeepStats(messages: Message[]): DeepStats | null {
       // Word count
       const cleanText = m.content.toLowerCase().replace(/[^\w\s]/g, "");
       const wordsArr = cleanText.trim().split(/\s+/).filter(w => w.length > 2 && !TOP_WORD_STOP_WORDS.has(w));
-      
+
       wordsArr.forEach(word => {
         totalWordCounts[word] = (totalWordCounts[word] || 0) + 1;
         participantWordCounts[m.sender][word] = (participantWordCounts[m.sender][word] || 0) + 1;
@@ -294,9 +331,8 @@ export function calculateDeepStats(messages: Message[]): DeepStats | null {
       }
 
       // Emoji count
-      const emojisArr = m.content.match(emojiRegex) || [];
+      const emojisArr = m.content.match(EMOJI_REGEX) || [];
       p.emojis += emojisArr.length;
-      // Count each emoji
       emojisArr.forEach((emj) => {
         p.emojiCounts![emj] = (p.emojiCounts![emj] || 0) + 1;
       });
@@ -308,6 +344,14 @@ export function calculateDeepStats(messages: Message[]): DeepStats | null {
     totalQuestions_count += questionMarks;
 
     if (isEdited) p.edited++;
+
+    // Mention tracking
+    if (m.mentions && m.mentions.length > 0) {
+      p.mentionsSent += m.mentions.length;
+      m.mentions.forEach((mentionedName) => {
+        mentionsReceivedRaw[mentionedName] = (mentionsReceivedRaw[mentionedName] || 0) + 1;
+      });
+    }
 
     if (dateTime) {
       weekdayCounts[dateTime.getDay()]++;
@@ -334,7 +378,6 @@ export function calculateDeepStats(messages: Message[]): DeepStats | null {
     const hour = parseInt(hourStr, 10);
     p.timesOfDay[hourStr] = (p.timesOfDay[hourStr] || 0) + 1;
 
-    // Assign to time bucket
     const bucket = timeOfDayBars.find((b) => hour >= b.range[0] && hour <= b.range[1]);
     if (bucket) {
       bucket.totals[m.sender] = (bucket.totals[m.sender] || 0) + 1;
@@ -347,6 +390,22 @@ export function calculateDeepStats(messages: Message[]): DeepStats | null {
     p.msgsPerDate![m.date] = (p.msgsPerDate![m.date] || 0) + 1;
   });
 
+  // Resolve received mentions: try exact match, then prefix match
+  Object.entries(mentionsReceivedRaw).forEach(([name, count]) => {
+    const exactMatch = participantStats[name];
+    if (exactMatch) {
+      exactMatch.mentionsReceived += count;
+      return;
+    }
+    // Partial: mentioned name might be a first name of "First Last"
+    const prefixMatch = Object.keys(participantStats).find((s) =>
+      s.toLowerCase().startsWith(name.toLowerCase())
+    );
+    if (prefixMatch) {
+      participantStats[prefixMatch].mentionsReceived += count;
+    }
+  });
+
   // Calculate top 3 emojis and top word for each participant
   Object.entries(participantStats).forEach(([sender, p]) => {
     if (p.emojiCounts) {
@@ -354,9 +413,8 @@ export function calculateDeepStats(messages: Message[]): DeepStats | null {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
         .map(([emoji]) => emoji);
-      // Only include least used emojis that occurred at least 3 times
       p.leastEmojis = Object.entries(p.emojiCounts)
-        .filter(([, count]) => count >= MINIMUM_EMOJI_OCCURRENCE) // Filter out emojis that are too rare
+        .filter(([, count]) => count >= MINIMUM_EMOJI_OCCURRENCE)
         .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]))
         .slice(0, 3)
         .map(([emoji]) => emoji);
@@ -414,7 +472,6 @@ export function calculateDeepStats(messages: Message[]): DeepStats | null {
       currentStreakCount = 1;
     }
   });
-  // Final check for the last batch
   if (lastSender && participantStats[lastSender]) {
     if (currentStreakCount > participantStats[lastSender].longestStreak) {
       participantStats[lastSender].longestStreak = currentStreakCount;
@@ -422,7 +479,6 @@ export function calculateDeepStats(messages: Message[]): DeepStats | null {
   }
 
   // -- Calculate Days Streak & Graph Data --
-  // Convert dates to timestamps for sorting
   const sortedDates = Array.from(uniqueDates).sort((a, b) => {
     const aDate = parseWhatsAppDateTime(a, "00:00");
     const bDate = parseWhatsAppDateTime(b, "00:00");
@@ -489,7 +545,6 @@ export function calculateDeepStats(messages: Message[]): DeepStats | null {
   timeOfDayBars.forEach((bar) => {
     if (bar.total > maxBarTotal) {
       maxBarTotal = bar.total;
-      // Find top sender in this bar
       let topSender = "";
       let topCount = 0;
       Object.entries(bar.totals).forEach(([sender, count]) => {
@@ -533,6 +588,25 @@ export function calculateDeepStats(messages: Message[]): DeepStats | null {
     return best;
   }, undefined);
 
+  // Group chat: more than 2 participants
+  const isGroupChat = Object.keys(participantStats).length > 2;
+
+  // Most mentioned & top mentioner (only meaningful in group chats)
+  const mostMentioned = Object.entries(participantStats).reduce<{ sender: string; count: number } | undefined>(
+    (best, [sender, p]) => {
+      if (p.mentionsReceived === 0) return best;
+      if (!best || p.mentionsReceived > best.count) return { sender, count: p.mentionsReceived };
+      return best;
+    }, undefined
+  );
+  const topMentioner = Object.entries(participantStats).reduce<{ sender: string; count: number } | undefined>(
+    (best, [sender, p]) => {
+      if (p.mentionsSent === 0) return best;
+      if (!best || p.mentionsSent > best.count) return { sender, count: p.mentionsSent };
+      return best;
+    }, undefined
+  );
+
   return {
     totalMessages: nonSystemMessages.length,
     totalActiveDays: uniqueDates.size,
@@ -544,6 +618,7 @@ export function calculateDeepStats(messages: Message[]): DeepStats | null {
     totalLinks: totalLinks_count,
     totalQuestions: totalQuestions_count,
     avgWordsPerMessage: totalTextMessages ? totalWords / totalTextMessages : 0,
+    isGroupChat,
     participants: participantStats,
     graphSeries,
     graphCategories,
@@ -556,5 +631,7 @@ export function calculateDeepStats(messages: Message[]): DeepStats | null {
     mostActiveBar,
     mostSaidWord,
     topDays: totalTopDays,
+    mostMentioned,
+    topMentioner,
   };
 }

@@ -64,18 +64,23 @@ export default function Stats() {
 
     setStatus("parsing");
     try {
-      // Read the zip file using zip.js
-      const zipFileReader = new BlobReader(file);
-      const zipReader = new ZipReader(zipFileReader);
-      const entries = await zipReader.getEntries();
-      const txtEntry = entries.find((entry) => entry.filename.endsWith(".txt"));
-      if (!txtEntry) throw new Error("No .txt file found in ZIP");
+      if (file.name.endsWith(".txt")) {
+        const content = await file.text();
+        parseData(content);
+      } else {
+        // Read the zip file using zip.js
+        const zipFileReader = new BlobReader(file);
+        const zipReader = new ZipReader(zipFileReader);
+        const entries = await zipReader.getEntries();
+        const txtEntry = entries.find((entry) => entry.filename.endsWith(".txt"));
+        if (!txtEntry) throw new Error("No .txt file found in ZIP");
 
-      const textWriter = new TextWriter();
-      const content = await (txtEntry as any).getData(textWriter);
-      await zipReader.close();
+        const textWriter = new TextWriter();
+        const content = await (txtEntry as any).getData(textWriter);
+        await zipReader.close();
 
-      parseData(content);
+        parseData(content);
+      }
     } catch (err) {
       console.error(err);
       setStatus("idle");
@@ -256,7 +261,7 @@ export default function Stats() {
 
           <input
             type="file"
-            accept=".zip"
+            accept=".zip,.txt"
             onChange={handleFileUpload}
             className="hidden"
             id="chat-upload"
@@ -274,7 +279,7 @@ export default function Stats() {
           >
             {status === "parsing"
               ? "Parsing Logs..."
-              : "Select ZIP File or Drag & Drop"}
+              : "Select .zip or .txt or Drag & Drop"}
           </label>
           {dragActive && (
             <div
@@ -334,9 +339,16 @@ export default function Stats() {
       <div className="max-w-6xl mx-auto">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
           <div>
-            <h1 className="text-3xl font-black text-white tracking-tight">
-              Chat <span className="text-green-600">Analytics</span>
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-black text-white tracking-tight">
+                Chat <span className="text-green-600">Analytics</span>
+              </h1>
+              {deepStats && (
+                <span className={`text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full border ${deepStats.isGroupChat ? "bg-blue-500/10 text-blue-400 border-blue-800" : "bg-green-500/10 text-green-400 border-green-800"}`}>
+                  {deepStats.isGroupChat ? "Group Chat" : "Direct Message"}
+                </span>
+              )}
+            </div>
             <p className="text-sm text-gray-500">
               {messages.length.toLocaleString()} messages processed
             </p>
@@ -699,6 +711,25 @@ export default function Stats() {
                       </div>
                     </div>
                   </div>
+
+                  {deepStats.isGroupChat && (deepStats.mostMentioned || deepStats.topMentioner) && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                      {deepStats.mostMentioned && (
+                        <div className="p-4 bg-black/30 rounded-xl border border-blue-900/40">
+                          <div className="text-xs text-gray-500 uppercase font-black mb-1">Most Mentioned</div>
+                          <div className="text-xl font-black text-blue-400">{deepStats.mostMentioned.sender}</div>
+                          <div className="text-xs text-gray-500">@-tagged {deepStats.mostMentioned.count} times</div>
+                        </div>
+                      )}
+                      {deepStats.topMentioner && (
+                        <div className="p-4 bg-black/30 rounded-xl border border-blue-900/40">
+                          <div className="text-xs text-gray-500 uppercase font-black mb-1">Top Mentioner</div>
+                          <div className="text-xl font-black text-blue-400">{deepStats.topMentioner.sender}</div>
+                          <div className="text-xs text-gray-500">sent {deepStats.topMentioner.count} @-mentions</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -951,6 +982,18 @@ export default function Stats() {
                                     <span className="text-gray-500">Question Marks</span>
                                     <span className="text-gray-300 font-mono">{p.questions}</span>
                                 </div>
+                                {deepStats.isGroupChat && (
+                                  <>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Mentions Sent</span>
+                                        <span className="text-blue-400 font-mono">{p.mentionsSent}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Times Mentioned</span>
+                                        <span className="text-blue-400 font-mono">{p.mentionsReceived}</span>
+                                    </div>
+                                  </>
+                                )}
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Fastest Reply</span>
                                     <span className="text-gray-300 font-mono">

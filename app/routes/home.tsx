@@ -37,13 +37,13 @@ export default function Home() {
 
         <div className="bg-gray-900 border border-gray-200 rounded-3xl p-8 shadow-sm max-w-2xl mx-auto">
           <p className="text-gray-300 mb-4 leading-relaxed">
-            Analyze your WhatsApp chats on the fly by uploading a Chat Export. 
+            Analyze your WhatsApp chats on the fly by uploading a Chat Export.
             <span className="block mt-2 font-medium text-gray-400">
-              Only English chats exported from an Android Device supported (for now).
+              Supports both DMs and group chats. Upload the .zip or the .txt file directly.
             </span>
           </p>
           <p className="text-sm text-gray-400 italic">
-            Feature availability may vary from OS and App version.
+            Supports Android and iOS exports. Feature availability may vary by region and app version.
           </p>
         </div>
       </div>
