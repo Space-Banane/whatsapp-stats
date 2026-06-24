@@ -6,6 +6,8 @@ services:
       - "6767:4545"
     entrypoint: /bin/sh -c "npm install -g pnpm && pnpm i && pnpm build && npm i -g serve && serve -s build/client -l 4545"
     working_dir: /app
+    environment:
+      - CI=true
     volumes:
       - .:/app
     restart: always
