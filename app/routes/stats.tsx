@@ -2,7 +2,6 @@ import {
   useState,
   useMemo,
   useDeferredValue,
-  useTransition,
   type ChangeEvent,
   useRef,
 } from "react";
@@ -22,6 +21,7 @@ import {
   buildWholeChatInsights,
 } from "./stats.helpers";
 import { MessageRow } from "../components/MessageRow";
+import { VirtualChatLog } from "../components/VirtualChatLog";
 
 export function meta({}) {
   return [
@@ -44,13 +44,14 @@ export default function Stats() {
   const [activeTab, setActiveTab] = useState<"overview" | "chatlog" | "deep">(
     "overview",
   );
-  const [showLogWarning, setShowLogWarning] = useState(false); // Warning state
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dayLogDate, setDayLogDate] = useState<string | null>(null);
+  // When set, the chat log scrolls this day to the top (used by "View in chat"
+  // on a search result to drop you back into the full, unfiltered stream).
+  const [jumpDate, setJumpDate] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [isPending, startTransition] = useTransition();
   const deferredSearchTerm = useDeferredValue(searchTerm);
 
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement> | File) => {
@@ -111,13 +112,10 @@ export default function Stats() {
     }
   };
 
-  // Intercept tab switching
+  // The chat log is virtualized, so even huge exports open instantly — no
+  // need to gate the tab behind a heavy-load warning anymore.
   const handleTabChange = (tab: "overview" | "chatlog" | "deep") => {
-    if (tab === "chatlog" && messages.length > 5000) {
-      setShowLogWarning(true);
-    } else {
-      setActiveTab(tab);
-    }
+    setActiveTab(tab);
   };
 
   const parseData = (text: string) => {
@@ -128,6 +126,13 @@ export default function Stats() {
 
   const showLogsForDate = (date: string) => {
     setDayLogDate(date);
+  };
+
+  // From a search result, clear the filters and scroll the full log to that day.
+  const jumpToDayInChat = (date: string) => {
+    setSearchTerm("");
+    setSelectedDate(null);
+    setJumpDate(date);
   };
 
   const stats = useMemo(() => {
@@ -301,41 +306,6 @@ export default function Stats() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-gray-300 p-4 md:p-8 relative">
-      {/* Warning Modal */}
-      {showLogWarning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-gray-900 border border-red-900/50 p-8 rounded-3xl max-w-md w-full shadow-2xl">
-            <h3 className="text-2xl font-black text-red-500 mb-2">
-              Heavy Load Warning
-            </h3>
-            <p className="text-gray-400 mb-6">
-              You are about to render{" "}
-              <span className="text-white font-bold">
-                {messages.length.toLocaleString()}
-              </span>{" "}
-              messages. This might freeze your browser for a moment.
-            </p>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowLogWarning(false)}
-                className="flex-1 px-4 py-3 rounded-xl bg-gray-800 text-white font-bold hover:bg-gray-700 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  setShowLogWarning(false);
-                  setActiveTab("chatlog");
-                }}
-                className="flex-1 px-4 py-3 rounded-xl bg-red-600/20 text-red-500 font-bold hover:bg-red-600/30 transition border border-red-900"
-              >
-                Continue Anyway
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="max-w-6xl mx-auto">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
           <div>
@@ -437,22 +407,29 @@ export default function Stats() {
                 placeholder="Search keywords or users..."
                 className="w-full bg-black border border-gray-700 text-white rounded-xl px-5 py-3 focus:outline-none focus:ring-2 focus:ring-green-600/50 transition-all font-medium"
                 value={searchTerm}
-                onChange={(e) =>
-                  startTransition(() => {
-                    setSearchTerm(e.target.value);
-                    if (e.target.value) setSelectedDate(null); // Optional: clear date filter when searching
-                  })
-                }
+                onChange={(e) => {
+                  // Update the input value urgently so typing stays snappy; the
+                  // expensive filtering is deferred via useDeferredValue below.
+                  setSearchTerm(e.target.value);
+                  if (e.target.value) setSelectedDate(null); // clear date filter when searching
+                }}
               />
-              {isPending && (
+              {searchTerm !== deferredSearchTerm && (
                 <p className="text-xs text-green-400 mt-2">Updating results…</p>
               )}
             </div>
-            <div className="flex-1 overflow-y-auto p-6 space-y-3 custom-scrollbar">
-              {filteredMessages.map((m, i) => (
-                <MessageRow key={i} m={m} />
-              ))}
-            </div>
+            <VirtualChatLog
+              messages={filteredMessages}
+              onJumpToDay={
+                deferredSearchTerm.trim() ? jumpToDayInChat : undefined
+              }
+              // Only scroll once the (deferred) search has actually cleared, so
+              // we target the full stream and not the still-filtered list.
+              scrollToDate={
+                jumpDate && !deferredSearchTerm.trim() ? jumpDate : null
+              }
+              onScrolledToDate={() => setJumpDate(null)}
+            />
           </div>
         )}
 
